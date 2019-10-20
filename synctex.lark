@@ -1,4 +1,4 @@
-start: preamble content // postamble postscriptum
+start: preamble content postamble postscriptum
 versionnumber: SIGNED_NUMBER
 inputtag: SIGNED_NUMBER
 FILENAME: /[^\n\r]+/
@@ -106,9 +106,12 @@ rrecord: "r" link ":" point ":" size NEWLINE
 formrefrecord: "f" formtag ":" point NEWLINE
 //<form ref record> ::= "f" <form tag> ":" <point> <end of record>
 //
+postamble: byteoffsetrecord "Postamble:" NEWLINE "Count:" SIGNED_NUMBER NEWLINE
 //<Postamble>::= <byte offset record>
 //                 "Count:" <Number of records> <NEWLINE>
 //
+postscriptum: byteoffsetrecord "Post scriptum:" NEWLINE psfields*
+psfields: WORD ":" WORD
 //<Post Scriptum>::= <byte offset record>
 //                 "Post Scriptum:" <NEWLINE>
 //                 "Magnification:" <number> <NEWLINE> (Set additional magnification)
@@ -118,3 +121,4 @@ formrefrecord: "f" formtag ":" point NEWLINE
 %import common.SIGNED_NUMBER
 %import common.ESCAPED_STRING
 %import common.NEWLINE
+%import common.WORD
