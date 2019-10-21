@@ -1,5 +1,4 @@
 # coding: utf-8
-import x
 import lark
 import logging
 
@@ -11,4 +10,5 @@ with open("x.synctex", "r") as f:
     text = f.read()
 
     
-print(sa.parse(text))
+parsed=sa.parse(text)
+
