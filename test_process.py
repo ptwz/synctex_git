@@ -49,7 +49,7 @@ class dataVisitor(lark.Visitor):
         self.page += 1
         self.pages[self.page] = {}
         print("sheet")
-    
+
     def link(self, tree):
         self.cur_file = int(tree.children[0].children[0])
         self.cur_line = int(tree.children[1].children[0])
@@ -63,22 +63,23 @@ class dataVisitor(lark.Visitor):
         self.cur_size = self._handle_wh(tree)
 
     def point(self, tree):
-        self.cur_point = self._handle_wh(tree)
+        self.cur_point = tuple([int(x) for x in tree.children[0].children])
+
+    def _out_box(self):
+        return (self.cur_file, self.cur_line, self.cur_point, self.cur_size)
 
     def vboxsection(self, tree):
-        print("vboxsection ")
-        pass
+        print("vboxsection {}".format(self._out_box()))
 
     def voidvboxrecord(self, tree):
-        print("voidvboxrecord")
-        pass
+        print("voidvboxrecord {}".format(self._out_box()))
 
     def voidhboxrecord(self, tree):
-        print("voidhboxrecord")
+        print("voidhboxrecord {}".format(self._out_box()))
         pass
 
     def hboxsection(self, tree):
-        print("hboxsection")
+        print("hboxsection {}".format(self._out_box()))
         pass
 
     def NEWLINE(self, tree):
