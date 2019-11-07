@@ -1,6 +1,7 @@
 # coding: utf-8
 import lark
 import logging
+import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -12,3 +13,5 @@ with open("x.synctex", "r") as f:
     
 parsed=sa.parse(text)
 
+with open("tempfile", "wb") as f:
+    pickle.dump(parsed, f)
