@@ -50,7 +50,7 @@ class dataVisitor(lark.Visitor):
         self.pages[self.page] = {}
         print("sheet")
 
-    def link(self, tree):
+    def _link(self, tree):
         self.cur_file = int(tree.children[0].children[0])
         self.cur_line = int(tree.children[1].children[0])
 
@@ -79,8 +79,9 @@ class dataVisitor(lark.Visitor):
         return args
 
     def vboxsection(self, tree):
-        return
-        print("vboxsection")
+        self._link(tree.children[0])
+        self._point(tree.children[1])
+        self._size(tree.children[2])
         if 0 not in self.cur_size:
             print("vboxsection {}".format(self._out_box()))
 
@@ -94,6 +95,7 @@ class dataVisitor(lark.Visitor):
 
     def hboxsection(self, tree):
         #print("hboxsection {}".format(tree))
+        self._link(tree.children[0])
         self._point(tree.children[1])
         self._size(tree.children[2])
         if 0 not in self.cur_size:
@@ -117,6 +119,11 @@ class cairoVisitor(dataVisitor):
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
         self._ctx.rectangle(*cur_point, *cur_size)
         self._ctx.stroke()
+        #self.cairo.select_font_face(self._ctx, "Sans", self.cairo.CAIRO_FONT_SLANT_NORMAL, self.cairo.CAIRO_FONT_WEIGHT_BOLD)
+        #self.cairo.set_font_size(self._ctx, 100)
+        self._ctx.move_to(*cur_point)
+        self._ctx.set_font_size(65535*2)
+        self._ctx.show_text("{}:{}".format(cur_file, cur_line))
         pass
 
     def sheet(self, tree):
