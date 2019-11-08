@@ -16,22 +16,6 @@ def pretty_print(element, level=0):
         pretty_print(x, level+1)
 
 
-def process(element, files, lines, level=0):
-    try:
-        data = element.data
-    except AttributeError:
-        return
-    if data == 'inputline':
-        inputtag = element.children[0].children[0].strip()
-        filename = element.children[1].strip()
-        print(inputtag, filename)
-        assert inputtag not in files
-        files[inputtag] = filename
-    else:
-        for child in element.children:
-            process(child, files, lines, level+1)
-
-
 class dataVisitor(lark.Visitor):
     def __init__(self):
         lark.Visitor.__init__(self)
@@ -40,9 +24,11 @@ class dataVisitor(lark.Visitor):
         self.page = 0
 
     def inputline(self, tree):
-        inputtag = tree.children[0].children[0].strip()
+        inputtag = int(tree.children[0].children[0])
         filename = tree.children[1].strip()
+        filename = filename.split("/./")[-1]
         assert inputtag not in files
+        print(inputtag, filename)
         self.files[inputtag] = filename
 
     def sheet(self, tree):
@@ -77,6 +63,11 @@ class dataVisitor(lark.Visitor):
         args = (self.cur_file, self.cur_line, self.cur_point, self.cur_size)
         self._shipout_box(*args)
         return args
+
+#    def inputline(self, tree):
+#        inputtag = int(tree.children[0].children[0])
+#        filename = str(tree.children[1])
+#        self.files[inputtag] = filename
 
     def vboxsection(self, tree):
         self._link(tree.children[0])
@@ -123,7 +114,7 @@ class cairoVisitor(dataVisitor):
         #self.cairo.set_font_size(self._ctx, 100)
         self._ctx.move_to(*cur_point)
         self._ctx.set_font_size(65535*2)
-        self._ctx.show_text("{}:{}".format(cur_file, cur_line))
+        self._ctx.show_text("{}:{}".format(self.files[cur_file], cur_line))
         pass
 
     def sheet(self, tree):
