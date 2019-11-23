@@ -32,9 +32,12 @@ class dataVisitor(lark.Visitor):
         self.files[inputtag] = filename
 
     def sheet(self, tree):
-        self.page += 1
-        self.pages[self.page] = {}
-        print("sheet")
+        '''
+        Called when a page has been completely parsed.
+        Takes the page number from the sheet record and
+        stores in _page
+        '''
+        self._page = tree.children[1]
 
     def _link(self, tree):
         self.cur_file = int(tree.children[0].children[0])
@@ -103,27 +106,40 @@ class annotationVisistor(dataVisitor):
         dataVisitor.__init__(self)
         self._annotator = self.PdfAnnotator("Textbausteintest.pdf") 
         self._page=0
+        # List of annotations to drop onto a page once it
+        # has finished
+        self._annotations = []
 
     def sheet(self, tree):
-        self._page += 1
+        '''
+        Render all our annotations on a page
+        that has been finished.
+        '''
+        self._page = int(tree.children[1])
+        for annot in self._annotations:
+            # Patch page number, assuming all annotations have Location in 2nd
+            # element
+            annot[1].page = self._page - 1
+            self._annotator.add_annotation(*annot)
+        self._annotations = []
 
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
         label = "{}:{}".format(self.files[cur_file], cur_line)
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
         print(cur_pos, cur_size, self._page)
-        self._annotator.add_annotation( 'square', self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),)
-        """
-        self._annotator.add_annotation("text",
-                self.Location(x1=cur_point[0],y1=cur_point[1],x2=cur_point[0]+cur_size[0],y2=cur_point[1]+cur_size[1], page=self._page),
+        self._annotations.append( ('square', self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),) )
+
+
+        self._annotations.append( ("text",self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page) ,
                 self.Appearance(
                     fill=[0.4, 0, 0],
                     stroke_width=1,
-                    font_size=5,r
+                    font_size=5,
                     content=label,
                 ),
-            )
-
+            ))
+        """
         self._annotator.add_annotation( 'square',
                 self.Location(x1=cur_point[0],y1=cur_point[1],x2=cur_point[0]+cur_size[0],y2=cur_point[1]+cur_size[1], page=self._page),
     self.Appearance(stroke_color=(1, 0, 0), stroke_width=5),
@@ -137,6 +153,7 @@ class annotationVisistor(dataVisitor):
                 ),
             )
         """
+
     def done(self):
         #self._annotator.add_annotation( 'square', self.Location(x1=50, y1=50, x2=100, y2=100, page=0), self.Appearance(stroke_color=(1, 0, 0), stroke_width=5),)
         self._annotator.write("out.pdf")
