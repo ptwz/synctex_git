@@ -127,10 +127,14 @@ class annotationVisistor(dataVisitor):
         label = "{}:{}".format(self.files[cur_file], cur_line)
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
+        # Try to invert y position
+        (ysize, xsize) = self._annotator.get_size(self._page)
+        cur_pos[1] = ysize - cur_pos[1]
+
         print(cur_pos, cur_size, self._page)
-        self._annotations.append( ('square', self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),) )
+        self._annotations.append( ('square', self.Location(x1=cur_pos[0], y1=cur_pos[1], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),) )
 
-
+        """
         self._annotations.append( ("text",self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page) ,
                 self.Appearance(
                     fill=[0.4, 0, 0],
@@ -139,7 +143,6 @@ class annotationVisistor(dataVisitor):
                     content=label,
                 ),
             ))
-        """
         self._annotator.add_annotation( 'square',
                 self.Location(x1=cur_point[0],y1=cur_point[1],x2=cur_point[0]+cur_size[0],y2=cur_point[1]+cur_size[1], page=self._page),
     self.Appearance(stroke_color=(1, 0, 0), stroke_width=5),
