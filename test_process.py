@@ -28,7 +28,7 @@ class dataVisitor(lark.Visitor):
         filename = tree.children[1].strip()
         filename = filename.split("/./")[-1]
         assert inputtag not in files
-        print(inputtag, filename)
+        #print(inputtag, filename)
         self.files[inputtag] = filename
 
     def sheet(self, tree):
@@ -77,11 +77,11 @@ class dataVisitor(lark.Visitor):
         self._point(tree.children[1])
         self._size(tree.children[2])
         if 0 not in self.cur_size:
-            print("vboxsection {}".format(self._out_box()))
+            self._out_box()
 
     def voidvboxrecord(self, tree):
-        #print("voidvboxrecord {}".format(self._out_box()))
         pass
+        #print("voidvboxrecord {}".format(self._out_box()))
 
     def voidhboxrecord(self, tree):
         #print("voidhboxrecord {}".format(self._out_box()))
@@ -93,8 +93,9 @@ class dataVisitor(lark.Visitor):
         self._point(tree.children[1])
         self._size(tree.children[2])
         if 0 not in self.cur_size:
-            print("hboxsection {}".format(self._out_box()))
-        pass
+            #print("hboxsection {}".format(
+            self._out_box()
+            #)
 
     def NEWLINE(self, tree):
         print ("NEWLINE")
@@ -122,16 +123,18 @@ class annotationVisistor(dataVisitor):
             annot[1].page = self._page - 1
             self._annotator.add_annotation(*annot)
         self._annotations = []
+        
+
 
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
         label = "{}:{}".format(self.files[cur_file], cur_line)
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
         # Try to invert y position
-        (ysize, xsize) = self._annotator.get_size(self._page)
-        cur_pos[1] = ysize - cur_pos[1]
+        (px1,py1, px2,py2) = self._annotator.get_page_bounding_box(self._page-1)
+        cur_pos[1] = py1 + py2 - cur_pos[1]
 
-        print(cur_pos, cur_size, self._page)
+#        print(cur_pos, cur_size, self._page)
         self._annotations.append( ('square', self.Location(x1=cur_pos[0], y1=cur_pos[1], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),) )
 
         """
