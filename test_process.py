@@ -28,8 +28,15 @@ class dataVisitor(lark.Visitor):
         filename = tree.children[1].strip()
         filename = filename.split("/./")[-1]
         assert inputtag not in files
-        #print(inputtag, filename)
         self.files[inputtag] = filename
+        self._input_file(inputtag, filename)
+
+    def _input_file(self, inputtag, filename):
+        '''
+        When a new TeX input file was found, this stub
+        is called. Use for own code in overlapping visitors
+        '''
+        pass
 
     def sheet(self, tree):
         '''
@@ -123,20 +130,31 @@ class annotationVisistor(dataVisitor):
             annot[1].page = self._page - 1
             self._annotator.add_annotation(*annot)
         self._annotations = []
-        
 
+    def _input_file(self, inputtag, filename):
+        pass
 
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
+        # Create a label text for the current line
         label = "{}:{}".format(self.files[cur_file], cur_line)
+
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
         # Try to invert y position
         (px1,py1, px2,py2) = self._annotator.get_page_bounding_box(self._page-1)
         cur_pos[1] = py1 + py2 - cur_pos[1]
 
-#        print(cur_pos, cur_size, self._page)
-        self._annotations.append( ('square', self.Location(x1=cur_pos[0], y1=cur_pos[1], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page), self.Appearance(stroke_color=(1, 0, 0), stroke_width=1),) )
-
+        # Draw a polygon around the box
+        points = [[cur_pos[0],              cur_pos[1]],
+                  [cur_pos[0]+cur_size[0],  cur_pos[1]],
+                  [cur_pos[0]+cur_size[0],  cur_pos[1]+cur_size[1]],
+                  [cur_pos[0],              cur_pos[1]+cur_size[1]],
+                  ]
+        self._annotations.append(
+            ('polygon',
+             self.Location(points=points, page=self._page),
+             self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0)
+             ))
         """
         self._annotations.append( ("text",self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page) ,
                 self.Appearance(
