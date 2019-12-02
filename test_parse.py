@@ -2,11 +2,12 @@
 import lark
 import logging
 import pickle
+import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-sa = lark.lark.Lark(open("./synctex.lark", "r"), debug=True)
+sa = lark.lark.Lark(open(sys.argv[1], "r"), debug=True)
 with open("x.synctex", "r") as f:
     text = f.read()
 
