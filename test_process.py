@@ -109,11 +109,14 @@ class dataVisitor(lark.Visitor):
 
 class annotationVisistor(dataVisitor):
     from pdf_annotate import PdfAnnotator, Location, Appearance
+    from git import Repo, GitCommandError
 
-    def __init__(self):
+    def __init__(self, repo):
         dataVisitor.__init__(self)
-        self._annotator = self.PdfAnnotator("Textbausteintest.pdf") 
+        self.repo = self.Repo(repo)
+        self._annotator = self.PdfAnnotator("testdata/test.pdf")
         self._page=0
+        self._blames = {}
         # List of annotations to drop onto a page once it
         # has finished
         self._annotations = []
@@ -132,11 +135,23 @@ class annotationVisistor(dataVisitor):
         self._annotations = []
 
     def _input_file(self, inputtag, filename):
-        pass
+        try:
+            #
+            self.repo.blame("@", filename)
+            self._blames[filename] = [x for x in self.repo.blame_incremental("@", filename)]
+            logging.error("Can blame file {}".format(filename))
+        except self.GitCommandError as e:
+            self._blames[filename] = None
 
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
         # Create a label text for the current line
+        filename = self.files[cur_file]
+        assert filename in self._blames
+        if self._blames[filename] is None:
+            # Skip file when nothing to blame ;)
+            return
         label = "{}:{}".format(self.files[cur_file], cur_line)
+        print("Someone is to blame {}".format(label))
 
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
@@ -215,7 +230,7 @@ lines = {}
 
 #pretty_print(data)
 #process(data, files, lines)
-v=annotationVisistor()
+v=annotationVisistor(".")
 v.visit(data)
 v.done()
 
