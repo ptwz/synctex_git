@@ -2,6 +2,9 @@
 import logging
 import pickle
 import lark
+from collections import namedtuple
+
+annotation_tuple = namedtuple("annotation_tuple", "location,appearance,label".split(","))
 
 data = pickle.load(open("tempfile", "rb"))
 
@@ -127,13 +130,33 @@ class annotationVisistor(dataVisitor):
         that has been finished.
         '''
         self._page = int(tree.children[1])
-        for annot in self._annotations:
-            # Patch page number, assuming all annotations have Location in 2nd
-            # element
-            annot[0][1].page = self._page - 1
-            annot[1][1].page = self._page - 1
-            popup = self._annotator.add_annotation(*annot[1])
-            self._annotator.add_annotation(*annot[0], related={"Popup": popup})
+        # Filter out locations that overlap
+        overlapping=set()
+        for outer_idx in range(len(self._annotations)):
+            outer = self._annotations[outer_idx]
+            min_x_outer = min(outer.location.x1,outer.location.x2)
+            min_y_outer = min(outer.location.y1,outer.location.y2)
+            max_x_outer = max(outer.location.x1,outer.location.x2)
+            max_y_outer = max(outer.location.y1,outer.location.y2)
+            for inner_idx in range(len(self._annotations)):
+                inner = self._annotations[inner_idx]
+                max_x_inner = max(inner.location.x1,inner.location.x2)
+                max_y_inner = max(inner.location.y1,inner.location.y2)
+                min_x_inner = min(inner.location.x1,inner.location.x2)
+                min_y_inner = min(inner.location.y1,inner.location.y2)
+                if outer != inner and min_x_outer >= min_x_inner and max_x_outer <= max_x_outer and min_y_inner >= min_y_inner and max_y_outer <= max_y_outer:
+                        overlapping.add(inner_idx)
+        print("Overlapping {}".format(overlapping))
+        print("len(annot)={}".format(len(self._annotations)))
+
+        for idx in range(len(self._annotations)):
+            if idx in overlapping:
+                continue
+            print("HIER")
+            # Patch page number
+            annot.location.page = self._page - 1
+            popup = self._annotator.add_annotation("popuptext", annot.location, annot.appearance)
+            self._annotator.add_annotation(annot.location, annot.appearance, related={"Popup": popup})
         self._annotations = []
 
     def _get_blame(self, filename):
@@ -183,16 +206,10 @@ class annotationVisistor(dataVisitor):
                   [cur_pos[0]+cur_size[0],  cur_pos[1]+cur_size[1]],
                   [cur_pos[0],              cur_pos[1]+cur_size[1]],
                   ]
-        self._annotations.append(((
-            'popuptext',
-            self.Location(x1=50, y1=50, x2=100, y2=100, page=0),
-            self.Appearance(fill=(.5, 0.5, 0.5), stroke_width=5, content=label),
-        ),
-            ('polygon',
-             self.Location(points=points, page=self._page),
-             self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0),
-             ))
-        )
+        self._annotations.append( annotation_tuple( 
+                self.Location(x1=50, y1=50, x2=100, y2=100, page=0),
+                self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0),
+                label) )
         """
         self._annotations.append( ("text",self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page) ,
                 self.Appearance(
