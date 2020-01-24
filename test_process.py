@@ -130,15 +130,31 @@ class annotationVisistor(dataVisitor):
         for annot in self._annotations:
             # Patch page number, assuming all annotations have Location in 2nd
             # element
-            annot[1].page = self._page - 1
-            self._annotator.add_annotation(*annot)
+            annot[0][1].page = self._page - 1
+            annot[1][1].page = self._page - 1
+            popup = self._annotator.add_annotation(*annot[1])
+            self._annotator.add_annotation(*annot[0], related={"Popup": popup})
         self._annotations = []
+
+    def _get_blame(self, filename):
+        blame_inc = self.repo.blame_incremental('@', filename)
+        lines = {}
+        for blame in blame_inc:
+            for nr in blame.orig_linenos:
+                lines[nr]=blame.commit
+        return lines
+
+    def _format_commit(self, commit):
+        return "{}:{} ({})\n{}".format(commit.hexsha[-8:],
+                                       str(commit.committed_datetime),
+                                       str(commit.author),
+                                       str(commit.summary)
+                                       )
 
     def _input_file(self, inputtag, filename):
         try:
             #
-            self.repo.blame("@", filename)
-            self._blames[filename] = [x for x in self.repo.blame_incremental("@", filename)]
+            self._blames[filename] = self._get_blame(filename)
             logging.error("Can blame file {}".format(filename))
         except self.GitCommandError as e:
             self._blames[filename] = None
@@ -152,10 +168,12 @@ class annotationVisistor(dataVisitor):
             return
         label = "{}:{}".format(self.files[cur_file], cur_line)
         print("Someone is to blame {}".format(label))
+        ## TODO: Better blame!!
 
         cur_pos = [x/65535 for x in cur_point]
         cur_size = [x/65535 for x in cur_size]
         # Try to invert y position
+        # TODO: Maybe cache bounding box, as it is quite constant ;)
         (px1,py1, px2,py2) = self._annotator.get_page_bounding_box(self._page-1)
         cur_pos[1] = py1 + py2 - cur_pos[1]
 
@@ -165,11 +183,16 @@ class annotationVisistor(dataVisitor):
                   [cur_pos[0]+cur_size[0],  cur_pos[1]+cur_size[1]],
                   [cur_pos[0],              cur_pos[1]+cur_size[1]],
                   ]
-        self._annotations.append(
+        self._annotations.append(((
+            'popuptext',
+            self.Location(x1=50, y1=50, x2=100, y2=100, page=0),
+            self.Appearance(fill=(.5, 0.5, 0.5), stroke_width=5, content=label),
+        ),
             ('polygon',
              self.Location(points=points, page=self._page),
-             self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0)
+             self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0),
              ))
+        )
         """
         self._annotations.append( ("text",self.Location(x1=cur_pos[1], y1=cur_pos[0], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=self._page) ,
                 self.Appearance(
