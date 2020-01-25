@@ -189,7 +189,7 @@ class annotationVisistor(dataVisitor):
         if self._blames[filename] is None:
             # Skip file when nothing to blame ;)
             return
-        label = "{}:{}".format(self.files[cur_file], cur_line)
+        label = self._format_commit(self._blames[filename][cur_line])
         print("Someone is to blame {}".format(label))
         ## TODO: Better blame!!
 
