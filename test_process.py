@@ -2,7 +2,7 @@
 import logging
 import pickle
 import lark
-from collections import namedtuple
+from collections import namedtuple,defaultdict
 
 annotation_tuple = namedtuple("annotation_tuple", "location,appearance,label".split(","))
 
@@ -132,31 +132,31 @@ class annotationVisistor(dataVisitor):
         self._page = int(tree.children[1])
         # Filter out locations that overlap
         overlapping=set()
-        for outer_idx in range(len(self._annotations)):
-            outer = self._annotations[outer_idx]
-            min_x_outer = min(outer.location.x1,outer.location.x2)
-            min_y_outer = min(outer.location.y1,outer.location.y2)
-            max_x_outer = max(outer.location.x1,outer.location.x2)
-            max_y_outer = max(outer.location.y1,outer.location.y2)
-            for inner_idx in range(len(self._annotations)):
-                inner = self._annotations[inner_idx]
-                max_x_inner = max(inner.location.x1,inner.location.x2)
-                max_y_inner = max(inner.location.y1,inner.location.y2)
-                min_x_inner = min(inner.location.x1,inner.location.x2)
-                min_y_inner = min(inner.location.y1,inner.location.y2)
-                if outer != inner and min_x_outer >= min_x_inner and max_x_outer <= max_x_outer and min_y_inner >= min_y_inner and max_y_outer <= max_y_outer:
-                        overlapping.add(inner_idx)
-        print("Overlapping {}".format(overlapping))
-        print("len(annot)={}".format(len(self._annotations)))
+        count=defaultdict(int)
+        
+        coordrange = lambda c1,c2: set(range(int(c1), int(c2), int((c2-c1)/abs(c2-c1))))
+        
+        ranges = {}
+        for i in range(len(self._annotations)):
+            a = self._annotations[i]
+            ranges[i] = (coordrange(a.location.x1, a.location.x2), coordrange(a.location.y1, a.location.y2))
+
+        for i in range(len(self._annotations)):
+            for j in range(len(self._annotations)):
+                if i==j:
+                    continue
+                if ranges[j][0] >= ranges[i][0] and ranges[j][1] >= ranges[i][1]:
+                    overlapping.add(j)
 
         for idx in range(len(self._annotations)):
             if idx in overlapping:
                 continue
             print("HIER")
             # Patch page number
+            annot=self._annotations[idx]
             annot.location.page = self._page - 1
             popup = self._annotator.add_annotation("popuptext", annot.location, annot.appearance)
-            self._annotator.add_annotation(annot.location, annot.appearance, related={"Popup": popup})
+            self._annotator.add_annotation("square",annot.location, annot.appearance, related={"Popup": popup})
         self._annotations = []
 
     def _get_blame(self, filename):
@@ -200,14 +200,8 @@ class annotationVisistor(dataVisitor):
         (px1,py1, px2,py2) = self._annotator.get_page_bounding_box(self._page-1)
         cur_pos[1] = py1 + py2 - cur_pos[1]
 
-        # Draw a polygon around the box
-        points = [[cur_pos[0],              cur_pos[1]],
-                  [cur_pos[0]+cur_size[0],  cur_pos[1]],
-                  [cur_pos[0]+cur_size[0],  cur_pos[1]+cur_size[1]],
-                  [cur_pos[0],              cur_pos[1]+cur_size[1]],
-                  ]
         self._annotations.append( annotation_tuple( 
-                self.Location(x1=50, y1=50, x2=100, y2=100, page=0),
+                self.Location(x1=cur_pos[0], y1=cur_pos[1], x2=cur_pos[0]+cur_size[0], y2=cur_pos[1]+cur_size[1], page=0),
                 self.Appearance(fill=(1, 0, 0, 0.05), stroke_width=0),
                 label) )
         """
