@@ -155,7 +155,7 @@ class annotationVisistor(dataVisitor):
             # Patch page number
             annot=self._annotations[idx]
             annot.location.page = self._page - 1
-            popup = self._annotator.add_annotation("popuptext", annot.location, annot.appearance)
+            popup = self._annotator.add_annotation("popuptext", annot.location, self.Appearance(fill=[0.4, 0, 0],content=annot.label))
             self._annotator.add_annotation("square",annot.location, annot.appearance, related={"Popup": popup})
         self._annotations = []
 
