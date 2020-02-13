@@ -7,8 +7,8 @@ import sys
 logging.basicConfig(level=logging.DEBUG)
 
 
-sa = lark.lark.Lark(open(sys.argv[1], "r"), debug=True)
-with open("x.synctex", "r") as f:
+sa = lark.lark.Lark(open("synctex.lark", "r"), debug=True)
+with open(sys.argv[1], "r") as f:
     text = f.read()
 
     
