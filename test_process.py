@@ -189,7 +189,13 @@ class annotationVisistor(dataVisitor):
         if self._blames[filename] is None:
             # Skip file when nothing to blame ;)
             return
-        label = self._format_commit(self._blames[filename][cur_line])
+        try:
+            label = self._format_commit(self._blames[filename][cur_line-1])
+        except KeyError:
+            print(filename, cur_line, len(self._blames[filename]))
+            print(self._blames[filename])
+            print("Key error?!")
+            return
         print("Someone is to blame {}".format(label))
         ## TODO: Better blame!!
 
