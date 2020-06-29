@@ -2,6 +2,7 @@
 import logging
 import pickle
 import lark
+from lark.visitors import Visitor_Recursive
 from collections import namedtuple,defaultdict
 
 annotation_tuple = namedtuple("annotation_tuple", "location,appearance,label".split(","))
@@ -19,7 +20,7 @@ def pretty_print(element, level=0):
         pretty_print(x, level+1)
 
 
-class dataVisitor(lark.Visitor):
+class dataVisitor(Visitor_Recursive):
     def __init__(self):
         lark.Visitor.__init__(self)
         self.files = {}
