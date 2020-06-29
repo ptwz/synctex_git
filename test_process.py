@@ -19,7 +19,6 @@ def pretty_print(element, level=0):
     for x in element.children:
         pretty_print(x, level+1)
 
-
 class dataVisitor(Visitor_Recursive):
     def __init__(self):
         lark.Visitor.__init__(self)
@@ -30,6 +29,7 @@ class dataVisitor(Visitor_Recursive):
     def inputline(self, tree):
         inputtag = int(tree.children[0].children[0])
         filename = tree.children[1].strip()
+        print(filename)
         filename = filename.split("/./")[-1]
         assert inputtag not in files
         self.files[inputtag] = filename
@@ -148,15 +148,24 @@ class annotationVisistor(dataVisitor):
                     continue
                 if ranges[j][0] >= ranges[i][0] and ranges[j][1] >= ranges[i][1]:
                     overlapping.add(j)
-
+    
+        # Same content gets one popup
+        label_popups = {}
         for idx in range(len(self._annotations)):
             if idx in overlapping:
                 continue
-            print("HIER")
             # Patch page number
             annot=self._annotations[idx]
             annot.location.page = self._page - 1
-            popup = self._annotator.add_annotation("popuptext", annot.location, self.Appearance(fill=[0.4, 0, 0],content=annot.label))
+            label = annot.label
+            try:
+                popup = label_popups[label]
+                print('got LABEL', label)
+            except KeyError:
+                popup = self._annotator.add_annotation("popuptext", annot.location, self.Appearance(fill=[0.4, 0, 0],content=annot.label))
+                label_popups[label] = popup
+                print('made LABEL', label)
+
             self._annotator.add_annotation("square",annot.location, annot.appearance, related={"Popup": popup})
         self._annotations = []
 
@@ -185,6 +194,7 @@ class annotationVisistor(dataVisitor):
 
     def _shipout_box(self, cur_file, cur_line, cur_point, cur_size):
         # Create a label text for the current line
+        print(self.files)
         filename = self.files[cur_file]
         assert filename in self._blames
         if self._blames[filename] is None:
